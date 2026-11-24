@@ -244,11 +244,18 @@ const npcs=Array.from({length:8},(_,i)=>({x:100+Math.random()*700,y:170+Math.ran
 const PL={img:{cx:31,cz:-120,W:42,H:64},fut:{cx:45,cz:-30,W:32,H:50}};
 const CLU=[{dv:0,pl:'img',su:-1,sv:-1,off:9,a:6},{dv:2,pl:'img',su:-1,sv:1},{dv:3,pl:'img',su:1,sv:-1,off:12,all:1},
            {dv:4,pl:'fut',su:-1,sv:-1},{dv:5,pl:'fut',su:1,sv:-1},{dv:1,pl:'fut',su:-1,sv:1}];
-const WALK=[[-12,-1,-102,14],[-1,8,-90,14],[-12,70,-5,14],[-40,-12,-6,14],[-18,-12,-56,-3],[8,29,-36,-24],[29,61,-55,-7],[32,61,-66,-54],[48,62,-84,-54],[48,52,-91,-80],[10,52,-152,-97.5],[10,23,-97.5,-90],[37,52,-97.5,-90],[8,46,-89,-79],[24.5,35.5,-98,-88],[-1,9,-91,-80],[-1,9,-125,-91],[-20,-12,-102,-56],[-78,-12,-99,-91],[-80,-4,-146,-138],[-4,10,-148,-136],[-80,-72,-146,-97]];
+const WALK=[[-12,-1,-95,14],[-1,8,-90,14],[-12,70,-5,14],[-40,-12,-6,14],[-18,-12,-56,-3],[8,29,-36,-24],[29,61,-55,-7],[32,61,-66,-54],[48,62,-84,-54],[48,52,-91,-80],[10,52,-152,-97.5],[10,23,-97.5,-90],[37,52,-97.5,-90],[8,46,-89,-79],[24.5,35.5,-98,-88],[-1,9,-91,-80],[-1,9,-125,-91],[-20,-12,-91.5,-56],[-6.3,-1.7,-105,-94.5],[-17,-1.7,-109.3,-105],[-22,-16.6,-112,-100],[-78,-17,-100,-92.5],[-80,-4,-146,-138],[-4,10,-148,-136],[-80,-72,-146,-97]];
 const sstep=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t)};
 const T1=[29,78,-175,-7],T2=[10,29,-176,-89];
-const hillH=(x,z)=>{if(x>-16||x<-118||z<-150||z>-64)return 0;return 15*sstep((-x-16)/52)*sstep(Math.min(z+150,-64-z)/18)};
+const hillRaw=(x,z)=>{if(x>-16||x<-118||z<-150||z>-64)return 0;return 15*sstep((-x-16)/52)*sstep(Math.min(z+150,-64-z)/18)};
+const TERR=6.4;
+const hillH=(x,z)=>{let h=hillRaw(x,z);
+  if(z>-92)h*=sstep((-x-58)/10);                       /* 연구관 가기 전 왼쪽 언덕 → 평지 (인성관·창의관 자리) */
+  if(x<=-16.5&&x>=-118&&z>=-126&&z<=-92)h=Math.max(h,TERR); /* 지선관 쪽 윗단 */
+  return h};
 const H=(x,z)=>{let h=hillH(x,z);
+  if(x>=-6.5&&x<=-1.5&&z<=-95&&z>=-105)return 3.2*(-95-z)/10;                 /* 1번 계단: 입구에서 남쪽으로 올라감 */
+  if(x>-16.5&&x<=-1.5&&z<=-105&&z>=-109.5)return x>=-6.5?3.2:3.2+3.2*(-6.5-x)/10; /* 참 → 왼쪽으로 돌아 2번 계단 */
   if(x>=8&&x<=46.5&&z>=-89&&z<=-79)h=0;
   else if(x>=24&&x<=36&&z>=-97&&z<-89)h=(z+89)/2;
   else if(x>=-4&&x<10&&z>=-148&&z<=-136)h=-4*(x+4)/14;
@@ -259,7 +266,7 @@ const HH=(x,z)=>map==='fair'?H(x,z):0;let gyS=0;
 const walk=(px,py)=>{const q=XZ(px,py),x=q[0],z=q[1];return WALK.some(r=>x>=r[0]&&x<=r[1]&&z>=r[2]&&z<=r[3])};
 const PI=Math.PI,GATE=[-2,0];
 const BLD=[
- ['미래관',18,-30,48,18,20,-PI/2,'modern'],['창의관',-39.5,-82.5,16,26,12,0,'ctower'],['인성관',-26,-82.5,16,18,11,PI/2,'plain2',0xe4dccb],
+ ['미래관',18,-30,48,18,20,-PI/2,'modern'],['창의관',-47.5,-78.5,16,26,12,0,'ctower'],['인성관',-28,-78.5,16,18,11,PI/2,'plain2',0xe4dccb],
  ['낙산관(체육관)',-50,10,22,10,16,PI/2,'gym'],['연구관',4,-108,34,30,10,PI/2,'yeongu'],['지선관',-28,-108,10,14,9,0,'plain',0xd9d3c4],
  ['공학관 A',-46,-111,14,14,10,0,'plain',0xb9b6b0],['공학관 B',-64,-112,12,12,9,0,'plain',0xb9b6b0],['상상빌리지',-72,-80,9,8,8,PI,'glassblue'],
  ['상상관',29,-72,38,40,14,0,'sang'],['우촌관·중문',70,-34,56,14,14,-PI/2,'dark'],['안내실',16,5,6,4,5,0,'plain',0xe9e6dc],
@@ -733,7 +740,7 @@ function campus(){
      if(red)col.push(.64,.25,.24);else if(path)col.push(.72,.63,.5);else col.push(.31+.1*e,.48+.06*e,.34+.04*e)}
    for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const a=j*(nx+1)+i,b=a+1,c=a+nx+1,d=c+1;idx.push(a,c,b,b,c,d)}
    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));geo.setIndex(idx);geo.computeVertexNormals();
-   world.add(new THREE.Mesh(geo,new THREE.MeshLambertMaterial({vertexColors:true})));tl('⛰ 언덕길 (↗ 지선관·공학관·상상빌리지)',-30,6,-92,1.1)}
+   world.add(new THREE.Mesh(geo,new THREE.MeshLambertMaterial({vertexColors:true})));tl('⛰ 윗단 (지선관·공학관·상상빌리지)',-30,10,-97,1.1)}
   /* 바닥: 잔디 → 도로 → 보도 → 마당 */
   {const G=(a,b,c,d)=>BX((a+b)/2,-.3,(c+d)/2,b-a,.1,d-c,0x4f7a58);
    G(-140,-4,-250,50);G(-4,8,-250,-148);G(-4,8,-136,50);G(8,10,-250,-148);G(8,10,-136,-36);G(8,10,-24,50);G(10,29,-250,-176);G(10,29,-80,-36);G(10,29,-24,50);G(29,78,-250,-175);G(29,78,-7,50);G(78,190,-250,50)}
@@ -775,11 +782,23 @@ function campus(){
   [24.1,35.9].forEach(x=>{for(let i=0;i<=4;i++)BX(x,-.4*i*2.5+.5,-89-i*2,.08,1,.08,0x9aa0a6);const r=BX(x,-1.5,-93,.08,.08,8.9,0xb0b4ba);r.rotation.x=Math.atan(4/8)});
   tl('🚶 상상관 앞 길 → 진리관',27,4.6,-84,1);tl('⬇ 상상마당으로 내려가는 계단',30,2.3,-91,1.05);
   /* 연구관으로 올라가는 계단·난간 */
-  for(let i=0;i<4;i++)BX(4,.1+(3-i)*.14,-90.4+i*.9,10,.2,.9,0xd8d3c7);
-  for(let i=0;i<8;i++){const x=-17-i*1.6;BX(x,hillH(x,-95)+.06,-95,1.2,.22,7,0x4a3328)}
-  tl('⬅ 지선관·언덕길 (계단)',-15,5.5,-92,.9);tl('↗ 연구관 입구 계단',4,7.5,-86,.9);
+  /* 연구관 옆 ㄱ자 계단: 입구에서 남쪽으로 올라가 참에서 왼쪽(서쪽)으로 돌아 지선관 쪽 윗단으로 (2번째 사진) */
+  {const WD=0x4a3328,NS=0xeeeeee,RL=0x9aa0a6;
+   for(let i=0;i<10;i++){const top=.32*(i+1);BX(-4,top/2,-95.5-i,5,top,1,WD);BX(-4,top+.01,-95.06-i,5,.025,.1,NS)}
+   BX(-4,1.6,-107.25,5,3.2,4.5,WD);
+   for(let i=0;i<10;i++){const top=3.2+.32*(i+1);BX(-7-i,top/2,-107.25,1,top,4.5,WD);BX(-6.56-i,top+.01,-107.25,.1,.025,4.5,NS)}
+   BX(-1.3,3.5,-102.25,.4,7,14.5,0xf2f2f0);BX(-1.05,4.2,-99,.08,2.6,1.4,0xd9dde2);BX(-1.05,2.6,-101.5,.1,1.2,.9,0xbfc4ca);
+   {const r=BX(-6.6,2.6,-100,.08,.08,10.6,RL);r.rotation.x=Math.atan(.32)}for(let i=0;i<=5;i++)BX(-6.6,.32*i*2+.5,-95-i*2,.07,1,.07,RL);
+   {const r=BX(-11.5,5.8,-104.9,10.6,.08,.08,RL);r.rotation.z=-Math.atan(.32)}{const r=BX(-11.5,5.8,-109.6,10.6,.08,.08,RL);r.rotation.z=-Math.atan(.32)}
+   for(let i=0;i<=5;i++)[-104.9,-109.6].forEach(z=>BX(-6.5-i*2,3.2+.64*i+.5,z,.07,1,.07,RL));
+   BX(-4,3.7,-109.6,5,1,.07,RL);BX(-6.6,3.7,-107.25,.07,1,4.6,RL);
+   /* 윗단 옹벽 */
+   BX(-16.85,TERR/2,-115.5,.5,TERR,21,0xd9d4c6);BX(-16.85,TERR/2,-98.5,.5,TERR,13,0xd9d4c6);
+   BX(-37.2,TERR/2,-91.8,41,TERR,.5,0xd9d4c6);BX(-28.5,TERR/2,-126.2,24,TERR,.5,0xd9d4c6);
+   BX(-37,TERR+.55,-92.1,40,.08,.08,RL);
+   tl('⬆ 지선관·공학관 가는 계단 (연구관 옆)',-4,4.6,-94,1)}
   {const g=BX(4,1.7,-98.2,8,3.4,.2,0xbfe9ff);g.material=new THREE.MeshBasicMaterial({color:0xbfe9ff,transparent:true,opacity:.6});BX(4,3.5,-98.1,8.6,.3,.3,0x2b2f3a);[-.2,8.2].forEach(x=>BX(x,1.7,-98.1,.3,3.4,.3,0x2b2f3a));BX(4,4.2,-96.4,9,.25,3.6,0x2f9f5a);BX(4,1.8,-98.05,.1,3.4,.12,0xffffff);tl('🌿 상상파크 입구',4,5.7,-95.5,1.2)}
-  BX(5,6.2,-85,5,.35,12,0x9aa0a6);[2.6,7.4].forEach(x=>BX(x,7.1,-85,.12,1.1,12,0x8d9aa0));
+  
   /* 건물 */
   BLD.forEach(b=>{const n=b[0],x=b[1],z=b[2],w=b[3],h=b[4],d=b[5],ry=b[6],k=b[7],c=b[8],q0=world.children.length;
     if(n==='미래관'){modern(18,-45,18,18,20,'미래관',-PI/2);modern(18,-15,18,18,20,' ',-PI/2);BX(18,13.9,-30,20,9.6,12.2,0x2f4a6e);BX(18,9.1,-30,20.4,.3,12.4,0xeceff4);
@@ -794,11 +813,11 @@ function campus(){
     const hy=['지선관','공학관 A','공학관 B','상상빌리지'].includes(n)?hillH(x,z):(['우촌관·중문','상상관','진리관','학송관'].includes(n)?-4:0);
     if(hy){lift(q0,hy);if(hy>0){const e=fp(b);BX(x,hy/2-.3,z,e[0]+1.4,hy+.6,e[1]+1.4,0x8d8272)}}});
   /* 인성관 ↔ 연구관 공중 연결 다리 (도로·계단 위를 지나감) */
-  {const ax=-20.5,az=-88.5,bx=-1,bz=-93,dx=bx-ax,dz=bz-az,L=Math.hypot(dx,dz),g=new THREE.Group();g.position.set((ax+bx)/2,0,(az+bz)/2);g.rotation.y=Math.atan2(-dz,dx);world.add(g);
-   box(g,L,.4,3.2,0xd8d3c7,0,8.6,0);box(g,L+.4,.3,3.6,0x8d9aa0,0,11.6,0);
-   [-1,1].forEach(s=>{const gl=new THREE.Mesh(new THREE.BoxGeometry(L,2.6,.12),new THREE.MeshLambertMaterial({color:0x9fc7e0,transparent:true,opacity:.75}));gl.position.set(0,10.1,s*1.55);g.add(gl)});
-   for(let i=0;i<=5;i++)[-1,1].forEach(s=>box(g,.22,2.9,.22,0xeceff4,-L/2+i*L/5,10.1,s*1.6));
-   tl('🌉 인성관 ↔ 연구관 연결 다리',(ax+bx)/2,13.4,(az+bz)/2,1)}
+  {const ax=-22.5,az=-84,bx=-1,bz=-98,dx=bx-ax,dz=bz-az,L=Math.hypot(dx,dz),g=new THREE.Group();g.position.set((ax+bx)/2,0,(az+bz)/2);g.rotation.y=Math.atan2(-dz,dx);world.add(g);
+   box(g,L,.4,3.2,0xd8d3c7,0,7.2,0);box(g,L+.4,.3,3.6,0x8d9aa0,0,10.2,0);
+   [-1,1].forEach(s=>{const gl=new THREE.Mesh(new THREE.BoxGeometry(L,2.6,.12),new THREE.MeshLambertMaterial({color:0x9fc7e0,transparent:true,opacity:.75}));gl.position.set(0,8.7,s*1.55);g.add(gl)});
+   for(let i=0;i<=5;i++)[-1,1].forEach(s=>box(g,.22,2.9,.22,0xeceff4,-L/2+i*L/5,8.7,s*1.6));
+   tl('🌉 인성관 ↔ 연구관(2층) 연결 다리',(ax+bx)/2,12,(az+bz)/2,1)}
   {const hy=hillH(-28,-108);BX(-28,hy+.25,-102.2,8,.5,3,0x1b1b1f);BX(-22.6,hy+1.2,-102.6,1.1,2.2,.9,0x2f9f5a);BX(-31.4,hy+1.4,-102.6,3.4,2.4,.1,0xf2f2f2)}
   {const q=world.children.length;[-79,-73,-67,-61,-55].forEach(z=>{const c=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,7,10),mat(0xe9ecee));c.position.set(49.2,3.5,z);world.add(c)});BX(50.5,7.2,-67,5.5,.4,26,0x8d9aa0);lift(q,-4)}
   {const q=world.children.length;pagoda(76,-100);lift(q,-4)}
