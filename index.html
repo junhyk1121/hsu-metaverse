@@ -306,7 +306,9 @@ function fillCubes(){allBooths().forEach(b=>{if(!CUBES[b.id])CUBES[b.id]={code:b
   seminar:{title:'🎤 '+b.name+' 세미나',when:'매월 마지막 주 토 15:00',desc:'동아리 활동 공유와 발표 시간이에요.'}}})}
 const staffCodeOf=id=>CUBES[id].code+'-STAFF';
 const Mo=(cx,cz,w,d,o)=>Object.assign({x:WW/2+(cx-w/2)*K,y:WH/2+(cz-d/2)*K,w:w*K,h:d*K},o);
-const tableCap=o=>(S.tcap&&S.tcap[o.tid])||o.cap0||4;
+const tableCap=o=>{const oc=tableOcc(o.tid);return oc.cap||(VC.joined&&VC.room===o.tid&&VC.cap)||(S.tcap&&S.tcap[o.tid])||o.cap0||4};
+function tableOcc(tid){const L=(typeof NET==='object'?Object.values(NET.peers):[]).filter(p=>p.st&&p.st.vr===tid&&p.m===map),me1=VC.joined&&VC.room===tid;return {n:L.length+(me1?1:0),cap:(L[0]&&+L[0].st.vc)||(me1?VC.cap:0),names:L.map(p=>clean(p.st.n,20)),me:me1}}
+const occTxt=o=>{const c=tableOcc(o.tid),cap=tableCap(o);return c.n?'🎧 '+c.n+'/'+cap+'명 대화 중'+(c.n<cap?' · 자리 있음':' · 만석'):cap+'인석 · 비어 있음'};
 const parkObjs=()=>{const o=[];let n=0;
   [-5,5.5].forEach(z=>[-13,-4.5,4.5,13].forEach(x=>{n++;o.push(Mo(x,z,3.4,3.4,{kind:'table',tid:'park-t'+n,label:'🪑 테이블 '+n,shape:'round',cap0:4,col:0x6ec6ff}))}));
   [[-16,0x3f6fb0],[-9,0x8b93a1],[1,0x3f6fb0],[8,0x8b93a1]].forEach(s=>o.push(Mo(s[0],-14.5,5.5,1.8,{kind:'prop',t:'sofa',col:s[1]})));
@@ -417,11 +419,13 @@ function propMesh(g,o,w,d){
 function openTable(o){
   S.tcap=S.tcap||{};S.staff=S.staff||{};VC.cur=o;const id=isCC(map)||isCM(map)?CIDS():'',cap=tableCap(o);
   if(o.locked&&!S.staff[id]){openM('<h2>'+o.label+'</h2><p>운영진·임원진만 앉을 수 있는 회의 테이블이에요. 임원진 코드를 입력하세요.</p><div class="row"><input id="sc" placeholder="임원진 코드" autocomplete="off" onkeydown="if(event.key===\'Enter\')tryStaff()"><button onclick="tryStaff()">확인</button></div><p class="sub">🧪 테스트용 임원진 코드: <b>'+staffCodeOf(id)+'</b> (실서비스에서는 숨기고 임원진에게만 전달)</p><p id="sm" class="sub"></p>');$('sc').focus();return}
-  const here=VC.room===o.tid;
-  openM('<h2>'+o.label+'</h2><p>이 테이블에 <b>앉을 인원수</b>를 적어 주세요. 그 인원까지만 앉을 수 있고, <b>같은 테이블에 앉은 사람끼리만</b> 음성·채팅이 연결돼요. 다른 테이블 사람에게는 들리지 않아요.</p>'+
-    (here?'<p>✅ 지금 이 테이블에 앉아 있어요. (인원 '+VC.cap+'명 테이블)</p><button onclick="vcLeave();closeM()">🚪 자리에서 일어나기</button>':
-    '<div class="row"><input id="tn" type="number" min="2" max="40" value="'+cap+'"><button onclick="sitTable()">🎧 앉기 (음성 참여)</button></div><p class="sub">이미 누가 앉아 있다면 그 테이블의 인원수가 그대로 적용돼요. 마이크는 브라우저가 물어볼 때 허용하면 돼요 (거부해도 채팅으로 참여 가능).</p>')+
-    '<p class="sub">'+(SIGNAL_URL?'🌐 서버를 통해 다른 기기와도 연결돼요.':'🧪 지금은 테스트 모드: 같은 브라우저의 다른 탭끼리 음성이 연결돼요. 다른 기기끼리는 시그널링 서버(SIGNAL_URL)를 연결해야 해요.')+'</p>')}
+  const oc=tableOcc(o.tid),here=oc.me,left=cap-oc.n,who=oc.names.map(escH).join(', ');
+  let body;
+  if(here)body='<p>✅ 지금 이 테이블에 앉아 있어요. ('+oc.n+'/'+cap+'명)</p>'+(who?'<p class="sub">함께 앉은 사람: '+who+'</p>':'')+'<button onclick="vcLeave();closeM()">🚪 자리에서 일어나기</button>';
+  else if(oc.n&&left<=0)body='<p>⛔ <b>'+oc.n+'/'+cap+'명</b>으로 자리가 다 찼어요.</p><p class="sub">앉아 있는 사람: '+who+'</p><p class="sub">다른 테이블에 앉거나, 자리가 나면 다시 눌러 주세요.</p>';
+  else if(oc.n)body='<p>👥 지금 <b>'+oc.n+'명</b>이 대화 중이에요 · <b>남은 자리 '+left+'개</b></p><p class="sub">앉아 있는 사람: '+who+'</p><button onclick="sitTable()" style="width:100%;padding:12px">🎧 빈자리에 앉아 대화 참여하기 ('+(oc.n+1)+'/'+cap+')</button><p class="sub">중간에 들어가도 돼요. 앉으면 이 테이블 사람들과만 음성·채팅이 연결돼요.</p>';
+  else body='<p>비어 있는 테이블이에요. 이 테이블에 <b>앉을 인원수</b>를 정해 주세요. 그 인원까지만 앉을 수 있고, <b>같은 테이블에 앉은 사람끼리만</b> 음성·채팅이 연결돼요.</p><div class="row"><input id="tn" type="number" min="2" max="40" value="'+cap+'"><button onclick="sitTable()">🎧 앉기 (음성 참여)</button></div><p class="sub">다른 사람은 남은 자리가 있으면 중간에 들어올 수 있어요.</p>';
+  openM('<h2>'+o.label+'</h2>'+body+'<p class="sub">'+(mqOk()?'🌐 다른 기기 사람과도 연결돼요. 마이크는 브라우저가 물어볼 때 허용해 주세요 (거부해도 채팅으로 참여 가능).':'🧪 기기 간 연결이 꺼져 있어 같은 브라우저 탭끼리만 연결돼요.')+'</p>')}
 function openExhibit(){const id=CIDS(),cb=CUBES[id];S.exh=S.exh||{};const E0=S.exh[id]||[];
   openM('<h2>🖼 '+cb.name+' 전시관</h2><p class="sub">활동 사진·작품을 최대 3장 걸어 둘 수 있어요. 사진을 올리면 이 브라우저에 저장돼요 (데모).</p><div style="display:flex;gap:8px;flex-wrap:wrap">'+[0,1,2].map(i=>'<div style="flex:1;min-width:150px;border:6px solid #b5651d;background:#f4e3c8;border-radius:6px;padding:4px;text-align:center">'+(E0[i]?'<img src="'+E0[i]+'" style="width:100%;height:120px;object-fit:cover">':'<div style="height:120px;display:flex;align-items:center;justify-content:center;color:#8a6a3a">빈 액자 '+(i+1)+'</div>')+'<input type="file" accept="image/*" onchange="exhUp('+i+',this)" style="width:100%;font-size:11px"></div>').join('')+'</div><div class="row"><button class="ghost" onclick="S.exh[CIDS()]=[];save();openExhibit()">전시 비우기</button></div>')}
 function exhUp(i,el){const f=el.files[0];if(!f)return;imgData(f,360,d=>{if(!d)return;const id=CIDS();S.exh=S.exh||{};S.exh[id]=S.exh[id]||[];S.exh[id][i]=d;save();openExhibit();toast('🖼 액자에 걸었어요')})}
@@ -457,12 +461,15 @@ function gymRoom(cb){
   POST('🏆 우승 2025',-14,5.2,-H/2+.06,0,4,2.4,'#ffd166','#3a2a00');POST('🏀 UP 파이팅!',14,5.2,-H/2+.06,0,4,2.4,'#cfe8ff','#1d2433');
   const t=lab(cb.emoji+' '+cb.name+' 농구 코트·경기장',2);t.position.set(0,7.8,-H/2+.5);world.add(t)}
 function tryStaff(){const id=CIDS(),v=$('sc').value.replace(/\s+/g,'').toUpperCase();if(v!==staffCodeOf(id)){$('sm').textContent='❌ 코드가 올바르지 않아요.';return}S.staff[id]=1;save();toast('🔓 임원진 인증 완료');openTable(VC.cur)}
-function sitTable(){const o=VC.cur;let n=parseInt($('tn').value,10);if(!(n>=2))n=2;if(n>40)n=40;closeM();vcJoin(o.tid,n,o.label)}
+function sitTable(){const o=VC.cur,inp=$('tn');let n=inp?parseInt(inp.value,10):tableCap(o);if(!(n>=2))n=2;if(n>40)n=40;closeM();
+  vcJoin(o.tid,n,o.label).then(ok=>{if(!ok)return;VC.seat=o;const k=Object.keys(VC.members).length,a=k/Math.max(2,VC.cap)*Math.PI*2+Math.PI/2,r=Math.max(o.w,o.h)/2+34;
+    me.x=me.tx=o.x+o.w/2+Math.cos(a)*r;me.y=me.ty=o.y+o.h/2+Math.sin(a)*r;netSend(true)})}
 
 /* ---- 음성(WebRTC) · 같은 테이블(방) 안에서만 연결 ---- */
 const VC={id:Math.random().toString(36).slice(2,10),room:null,cap:0,title:'',joined:false,peers:{},cs:{},q:{},members:{},here:[],stream:null,muted:false,micErr:'',log:[],cur:null};
 let VBC=null,VWS=null;
-function vcSend(m){m.from=VC.id;m.nick=S.nick;try{if(VBC)VBC.postMessage(m)}catch(e){}try{if(VWS&&VWS.readyState===1)VWS.send(JSON.stringify(m))}catch(e){}}
+const VSEEN=new Set();
+function vcSend(m){m.from=VC.id;m.nick=S.nick;m.mid=Math.random().toString(36).slice(2,11);m.ch=+S.ch||1;try{mqVoice(m)}catch(e){}try{if(VBC)VBC.postMessage(m)}catch(e){}try{if(VWS&&VWS.readyState===1)VWS.send(JSON.stringify(m))}catch(e){}}
 function vcInit(){if(vcInit.d)return;vcInit.d=1;
   try{VBC=new BroadcastChannel('hsu-voice-v1');VBC.onmessage=e=>vcRecv(e.data)}catch(e){}
   if(SIGNAL_URL){try{VWS=new WebSocket(SIGNAL_URL);VWS.onmessage=e=>{try{vcRecv(JSON.parse(e.data))}catch(_){}};VWS.onclose=()=>{VWS=null}}catch(e){}}
@@ -478,7 +485,10 @@ async function vcCall(id){const pc=vcPC(id,1),o=await pc.createOffer();await pc.
 async function vcFlush(id){const pc=VC.peers[id],q=VC.q[id]||[];VC.q[id]=[];for(const c of q){try{await pc.addIceCandidate(c)}catch(e){}}}
 function vcDrop(id){const pc=VC.peers[id];if(pc){try{pc.close()}catch(e){}}delete VC.peers[id];delete VC.cs[id];delete VC.members[id];const a=document.getElementById('va-'+id);if(a)a.remove();vcPanel()}
 async function vcRecv(m){
-  if(!m||m.from===VC.id||!VC.room||m.room!==VC.room||(m.to&&m.to!==VC.id))return;
+  if(!m||m.from===VC.id)return;if(m.mid){if(VSEEN.has(m.mid))return;if(VSEEN.size>800)VSEEN.clear();VSEEN.add(m.mid)}
+  if((+m.ch||1)!==(+S.ch||1))return;
+  if(m.type==='vreq'||m.type==='vres'||m.type==='vcancel'){if(m.to===VC.id)onCall(m);return}
+  if(!VC.room||m.room!==VC.room||(m.to&&m.to!==VC.id))return;
   try{
     if(m.type==='join'){if(VC.joined)vcSend({type:'here',room:VC.room,to:m.from,cap:VC.cap});return}
     if(m.type==='here'){VC.here.push({id:m.from,nick:m.nick,cap:m.cap});return}
@@ -494,7 +504,7 @@ async function vcJoin(room,cap,title){
   Object.assign(VC,{room,cap,title,joined:false,here:[],members:{},peers:{},cs:{},q:{},log:[],micErr:'',muted:false});
   try{VC.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}})}catch(e){VC.stream=null;VC.micErr=(e&&e.name)||'mic'}
   vcSend({type:'join',room});
-  await new Promise(r=>setTimeout(r,700));
+  await new Promise(r=>setTimeout(r,mqOk()?1800:700));
   const ex=VC.here,c=ex.length?ex[0].cap:cap;
   if(ex.length+1>c){vcLeave(1);toast('⛔ 테이블이 가득 찼어요 ('+c+'/'+c+'명)');return false}
   VC.cap=c;VC.joined=true;S.tcap=S.tcap||{};if(S.tcap[room]!==c){S.tcap[room]=c;save();VB++}
@@ -530,7 +540,7 @@ function act(o){
   else if(o.kind==='shoot')openShoot();
 }
 function go(to){
-  const from=map;fillCubes();if(VC.room)vcLeave(1);map=to;const dv=to[0]==='d'&&to.length===2,cc=isCC(to);
+  const from=map;fillCubes();if(VC.room&&!VC.room.startsWith('dm-'))vcLeave(1);map=to;const dv=to[0]==='d'&&to.length===2,cc=isCC(to);
   if(dv){const z=divSize(+to[1]);WW=z[0];WH=z[1]}else if(cc){WW=1300;WH=860}else if(isCM(to)){WW=1400;WH=900}else if(isCG(to)){WW=1500;WH=900}else if(to==='park'){WW=1500;WH=1000}else if(to==='fair'){WW=FW;WH=FH}else{WW=900;WH=560}
   if(to==='fair'){const q=from==='lounge'?U(40,-70):from==='park'?U(4,-87):U(-2,10);me.x=me.tx=q[0];me.y=me.ty=q[1]}
   else if(cc&&isCM(from)){me.x=me.tx=WW-110;me.y=me.ty=WH/2}
@@ -994,7 +1004,7 @@ function build(){
       box(g,w,h,d,o.color,0,h/2,0);
       box(g,w*.9,2.6,.2,o.kind==='stage'?0xffffff:o.color,0,h+1.3,-d/2+.3);
     }
-    if(top>=0){const l=lab(o.kind==='booth'?o.b.emoji+' '+o.b.name:o.kind==='table'?o.label+' · '+tableCap(o)+'명':o.label);l.position.y=top;g.add(l)}
+    if(top>=0){const l=lab(o.kind==='booth'?o.b.emoji+' '+o.b.name:o.kind==='table'?o.label+' · '+occTxt(o):o.label);l.position.y=top;g.add(l)}
   });
 }
 function mkAv(c,n){
@@ -1023,7 +1033,7 @@ function anim(g,mv,t){
 function emote(k){NET.emo={k,t:Date.now()};if(selfAv){selfAv.userData.em=k;selfAv.userData.emT=performance.now()/1000+2.6}}
 npcs.forEach(n=>n.av=mkAv(n.c,n.n));
 /* ===== 실제 접속자와 함께하기: 같은 공간 아바타 + 채팅 ===== */
-const NET={id:Math.random().toString(36).slice(2,10),peers:{},room:null,conn:false,ws:null,bc:null,msgs:[],seq:0,lastSig:'',lastT:0,emo:null,n:0,log:[],open:!MOB,unread:0,byId:{},db:null,dbRef:null,dbOk:false,dbRO:false,dbBusy:false,dbPend:null,dbLastW:0,dbTimer:0,cleaned:{}};
+const NET={id:VC.id,peers:{},room:null,conn:false,ws:null,bc:null,msgs:[],seq:0,lastSig:'',lastT:0,emo:null,n:0,log:[],open:!MOB,unread:0,byId:{},db:null,dbRef:null,dbOk:false,dbRO:false,dbBusy:false,dbPend:null,dbLastW:0,dbTimer:0,cleaned:{}};
 const BADM=t=>{let s=String(t);BAD.forEach(w=>{s=s.split(w).join('*'.repeat(w.length))});return s};
 const clean=(t,n)=>String(t==null?'':t).replace(/[\u0000-\u001f\u007f​-‏‪-‮⁠-⁯﻿]/g,'').slice(0,n||120);
 const spaceName=m=>m==='fair'?'박람회장':m==='park'?'상상파크':m==='lounge'?'상상큐브 로비':/^(cc|cm|cg):/.test(m)?'🔒 동아리 공간':m&&m[0]==='d'?'분과관':'?';
@@ -1035,7 +1045,8 @@ function bub(t){const sp=new THREE.Sprite(new THREE.SpriteMaterial({transparent:
   if(b){x.fillText(a,256,42);x.fillText(b,256,84)}else x.fillText(a,256,62)})}));sp.scale.set(4.2,1.25,1);return sp}
 function sayBubble(av,t){if(!av)return;if(av.userData.bub)av.remove(av.userData.bub);const b=bub(t);b.position.y=3.35;av.add(b);av.userData.bub=b;const my=b;setTimeout(()=>{if(av.userData.bub===my){av.remove(my);av.userData.bub=null}},7000)}
 function netState(){const mv=Math.hypot(me.tx-me.x,me.ty-me.y)>4;
-  return {id:NET.id,n:clean(S.nick||'익명',20),c:String(S.color||'#4dabf7'),m:map,x:Math.round(me.x),y:Math.round(me.y),r:Math.round((selfAv?selfAv.rotation.y:0)*100)/100,mv:mv?1:0,e:NET.emo,msgs:NET.msgs}}
+  const vr=VC.joined&&VC.room&&!VC.room.startsWith('dm-')?VC.room:'';
+  return {id:NET.id,ch:+S.ch||1,vr,vc:vr?VC.cap:0,n:clean(S.nick||'익명',20),c:String(S.color||'#4dabf7'),m:map,x:Math.round(me.x),y:Math.round(me.y),r:Math.round((selfAv?selfAv.rotation.y:0)*100)/100,mv:mv?1:0,e:NET.emo,msgs:NET.msgs}}
 function netSend(force){if(!started)return;const st=netState(),sg=JSON.stringify(st),now=performance.now();
   const changed=sg!==NET.lastSig;if(!force&&!changed&&now-NET.lastT<2500)return;if(!force&&now-NET.lastT<120)return;NET.lastSig=sg;NET.lastT=now;
   if(NET.dbRef&&!NET.dbRO&&(force||changed||Date.now()-NET.dbLastW>30000)){NET.dbPend=st;dbPump(force)}
@@ -1056,6 +1067,7 @@ function netDb(db){NET.db=db;NET.dbRef=db.collection('world').doc(NET.id);
   addEventListener('pagehide',()=>{try{NET.dbRef.delete().catch(()=>{})}catch(e){}});
   netSend(true)}
 function netUpsert(key,st,src,guest){if(!st||typeof st!=='object'||typeof st.m!=='string')return;
+  if((+st.ch||1)!==(+S.ch||1)){if(NET.peers[key])netDrop(key);return}
   if(st.id){const k2=NET.byId[st.id];if(k2&&k2!==key&&NET.peers[k2])return;NET.byId[st.id]=key}
   let p=NET.peers[key];const fresh=!p;
   if(!p){p=NET.peers[key]={key,src,seen:{},x:+st.x||0,y:+st.y||0};(Array.isArray(st.msgs)?st.msgs:[]).forEach(q=>{if(q)p.seen[q.i]=1});toastJoin(st)}
@@ -1067,10 +1079,13 @@ function netUpsert(key,st,src,guest){if(!st||typeof st!=='object'||typeof st.m!=
   NET.dirty=1}
 function toastJoin(st){if(started)toast('🟢 '+clean(st.n,20)+' 님이 접속했어요 ('+spaceName(st.m)+(st.m===map?' · 같은 공간':' · 👥 접속자에서 찾아가기')+')')}
 function netDrop(key){const p=NET.peers[key];if(!p)return;if(p.av)sc.remove(p.av);delete NET.peers[key];NET.dirty=1}
-function netTick(tn){if(NET.lm!==map){NET.lm=map;chatRender()}netSend(false);const now=Date.now();let n=0;
+function netTick(tn){if(NET.lm!==map){NET.lm=map;chatRender()}netSend(false);
+  if(map!=='fair'&&(NET.oc=(NET.oc||0)+1)%20===0){const sg=objs().filter(o=>o.kind==='table').map(o=>{const c=tableOcc(o.tid);return c.n+'/'+c.cap}).join(',');if(sg!==NET.occ){NET.occ=sg;VB++}}
+  if(VC.joined&&VC.seat&&VC.room===VC.seat.tid){const o=VC.seat;if(Math.hypot(me.x-(o.x+o.w/2),me.y-(o.y+o.h/2))>Math.max(o.w,o.h)/2+300){VC.seat=null;vcLeave(1);toast('🚶 테이블에서 멀어져 자리에서 일어났어요')}}const now=Date.now();let n=0;
   for(const k in NET.peers){const p=NET.peers[k];if(p.src!=='room'&&now-p.lt>(p.src==='db'?75000:p.src==='mq'?12000:9000)){netDrop(k);continue}n++;
     const st=p.st,key=st.n+'|'+st.c;
-    if(!p.av||p.avk!==key){if(p.av)sc.remove(p.av);p.av=mkAv(st.c,'🟢 '+clean(st.n,20));p.avk=key;p.x=p.tx;p.y=p.ty}
+    if(!p.av||p.avk!==key){if(p.av)sc.remove(p.av);p.av=mkAv(st.c,'🟢 '+clean(st.n,20));const hb=new THREE.Mesh(new THREE.BoxGeometry(1.6,2.8,1.6),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));hb.position.y=1.3;p.av.add(hb);p.avk=key;p.x=p.tx;p.y=p.ty;
+      if(!NET.callTip){NET.callTip=1;setTimeout(()=>toast(MOB?'🎧 다른 사람 아바타를 꾹 누르면 음성대화를 요청할 수 있어요':'🎧 다른 사람 아바타를 마우스 오른쪽 클릭(또는 꾹 누르기)하면 음성대화를 요청할 수 있어요'),1500)}}
     const vis=p.m===map;p.av.visible=vis;if(!vis)continue;
     const dx=p.tx-p.x,dy=p.ty-p.y;if(Math.hypot(dx,dy)>400){p.x=p.tx;p.y=p.ty}else{p.x+=dx*.25;p.y+=dy*.25}
     p.av.position.x=wx(p.x);p.av.position.z=wz(p.y);p.av.rotation.y=+st.r||0;anim(p.av,!!st.mv||Math.hypot(dx,dy)>6,tn+n);p.av.position.y+=HH(p.av.position.x,p.av.position.z)}
@@ -1078,7 +1093,7 @@ function netTick(tn){if(NET.lm!==map){NET.lm=map;chatRender()}netSend(false);con
 function netInit(){if(netInit.d)return;netInit.d=1;
   try{NET.bc=new BroadcastChannel('hsu-world-v1');NET.bc.onmessage=e=>netRecv(e.data,'bc')}catch(e){}
   const wsOpen=()=>{if(!SIGNAL_URL)return;try{const w=new WebSocket(SIGNAL_URL);NET.ws=w;w.onmessage=e=>{try{netRecv(JSON.parse(e.data),'ws')}catch(_){}};w.onopen=()=>{netSend(true);chatHead()};w.onclose=()=>{NET.ws=null;chatHead();setTimeout(wsOpen,4000)}}catch(e){}};wsOpen();
-  mqConnect();
+  mqConnect();vcInit();
   addEventListener('pagehide',()=>{const m={t:'wbye',id:NET.id};mqPub(m,true);try{NET.bc&&NET.bc.postMessage(m)}catch(e){}try{NET.ws&&NET.ws.send(JSON.stringify(m))}catch(e){}});
   let tries=0;const tryRoom=()=>{if(window.claude&&typeof window.claude.use==='function'){NET.env='claude';NET.dbState='wait';chatHead();window.claude.use('room').then(r=>{if(r)netRoom(r)}).catch(()=>{});
     window.claude.use('db').then(d=>{if(d)netDb(d);else{NET.dbState='none';chatHead();toast('⚠ claude.ai에 로그인되어 있지 않아 다른 접속자와 연결할 수 없어요. 로그인 후 다시 열어 주세요')}}).catch(()=>{NET.dbState='none';chatHead()});return}
@@ -1090,7 +1105,7 @@ const MQ_BROKERS=['wss://broker.emqx.io:8084/mqtt','wss://broker.hivemq.com:8884
 const MQS=[];let MQLAST=0;
 const mqOk=()=>MQS.some(c=>c.ok);
 const mqCfg=()=>Object.assign({on:1,broker:'',code:'hsu2026'},S.net||{});
-const mqTopic=()=>'hsu-club-metaverse/v1/'+(String(mqCfg().code||'hsu2026').replace(/[^A-Za-z0-9_-]/g,'').slice(0,24)||'hsu2026')+'/world';
+const mqBase=()=>'hsu-club-metaverse/v1/'+(String(mqCfg().code||'hsu2026').replace(/[^A-Za-z0-9_-]/g,'').slice(0,24)||'hsu2026')+'/ch'+(+S.ch||1),mqTopic=()=>mqBase()+'/world',mqVTopic=()=>mqBase()+'/voice';
 const u8=s=>new TextEncoder().encode(s);
 const mqLen=n=>{const o=[];do{let b=n%128;n=Math.floor(n/128);if(n>0)b|=128;o.push(b)}while(n>0);return o};
 const mqStr=s=>{const b=u8(s);return [b.length>>8,b.length&255,...b]};
@@ -1106,10 +1121,11 @@ function mqOpen(m){if(!mqCfg().on||MQS.indexOf(m)<0)return;let ws;
     if(mqCfg().on&&MQS.indexOf(m)>=0)setTimeout(()=>mqOpen(m),Math.min(20000,2000+m.tries*2000))}}
 function mqParse(m){for(;;){const b=m.buf;if(b.length<2)return;let mul=1,n=0,i=1,v;do{if(i>=b.length)return;v=b[i++];n+=(v&127)*mul;mul*=128}while(v&128&&i<5);
     if(b.length<i+n)return;const t=b[0]>>4,p=b.slice(i,i+n);m.buf=b.slice(i+n);
-    if(t===2){if(p[1]===0){m.ok=true;m.err='';m.tries=0;m.ws.send(mqPkt(0x82,[0,1,...mqStr(mqTopic()),0]));clearInterval(m.ping);m.ping=setInterval(()=>{try{m.ws&&m.ws.send(new Uint8Array([0xC0,0]))}catch(e){}},30000);netSend(true);chatHead()}else{m.err='거부됨';try{m.ws.close()}catch(e){}}}
-    else if(t===3){const q=(b[0]>>1)&3,tl=(p[0]<<8)|p[1];const o=2+tl+(q?2:0);try{const msg=JSON.parse(new TextDecoder().decode(p.slice(o)));if(msg&&msg.id!==NET.id)m.rx++;netRecv(msg,'mq')}catch(e){}}}}
+    if(t===2){if(p[1]===0){m.ok=true;m.err='';m.tries=0;m.ws.send(mqPkt(0x82,[0,1,...mqStr(mqTopic()),0]));m.ws.send(mqPkt(0x82,[0,2,...mqStr(mqVTopic()),0]));clearInterval(m.ping);m.ping=setInterval(()=>{try{m.ws&&m.ws.send(new Uint8Array([0xC0,0]))}catch(e){}},30000);netSend(true);chatHead()}else{m.err='거부됨';try{m.ws.close()}catch(e){}}}
+    else if(t===3){const q=(b[0]>>1)&3,tl=(p[0]<<8)|p[1];const o=2+tl+(q?2:0),tp=new TextDecoder().decode(p.slice(2,2+tl));try{const msg=JSON.parse(new TextDecoder().decode(p.slice(o)));if(tp.endsWith('/voice')){vcRecv(msg);continue}if(msg&&msg.id!==NET.id)m.rx++;netRecv(msg,'mq')}catch(e){}}}}
 function mqPub(msg,force){if(!mqOk())return;const now=performance.now();if(!force&&now-MQLAST<250)return;MQLAST=now;const pk=mqPkt(0x30,[...mqStr(mqTopic()),...u8(JSON.stringify(msg))]);
   MQS.forEach(c=>{if(c.ok)try{c.ws.send(pk)}catch(e){}})}
+function mqVoice(msg){if(!mqOk())return;const pk=mqPkt(0x30,[...mqStr(mqVTopic()),...u8(JSON.stringify(msg))]);MQS.forEach(c=>{if(c.ok)try{c.ws.send(pk)}catch(e){}})}
 function mqRestart(){MQS.splice(0).forEach(c=>{try{c.ws&&c.ws.close()}catch(e){}clearInterval(c.ping)});for(const k in NET.peers)if(k.startsWith('mq:'))netDrop(k);setTimeout(mqConnect,300)}
 function openNetCfg(){const c=mqCfg();
   openM('<h2>🌐 연결 설정</h2><p>HTML 파일로 열었거나 서로 다른 기기에서 접속할 때, 아래 <b>모임 코드</b>가 같은 사람끼리 서로 보이고 채팅할 수 있어요. 서버를 따로 설치할 필요는 없어요.</p>'+
@@ -1150,17 +1166,47 @@ function chatRender(){const l=$('wcl');if(!l)return;l.textContent='';
   l.scrollTop=l.scrollHeight;chatHead()}
 function chatHead(){const h=$('wch');if(!h)return;const here=Object.values(NET.peers).filter(p=>p.m===map).length,all=Object.keys(NET.peers).length;
   const mode=NET.dbState==='none'&&!mqOk()?'⚠ 로그인 필요':mqOk()?'🌐 기기 간 연결':NET.room&&NET.conn?'🌐 실시간 연결':NET.dbOk?(NET.dbRO?'👀 보기 전용 (채팅 불가)':'🌐 실시간 연결'):NET.ws&&NET.ws.readyState===1?'🌐 서버 연결':'🧪 같은 브라우저 탭끼리';
-  h.textContent='💬 '+spaceName(map)+' 채팅 · 👥 여기 '+(here+1)+'명'+(all-here?' · 다른 공간 '+(all-here)+'명':'')+(NET.unread&&!NET.open?' · 새 메시지 '+NET.unread:'');
+  h.textContent='💬 채널'+(+S.ch||1)+' '+spaceName(map)+' · 👥 여기 '+(here+1)+'명'+(all-here?' · 다른 공간 '+(all-here)+'명':'')+(NET.unread&&!NET.open?' · 새 메시지 '+NET.unread:'');
   const md=$('wcm');if(md)md.textContent=mode;
   $('wc').classList.toggle('closed',!NET.open)}
 function chatToggle(){NET.open=!NET.open;if(NET.open)NET.unread=0;chatHead();if(NET.open){chatRender();if(!MOB)setTimeout(()=>$('wci').focus(),0)}}
+function setCh(n){if((+S.ch||1)===n)return;S.ch=n;save();hud();for(const k in NET.peers)netDrop(k);NET.byId={};if(VC.room)vcLeave(1);mqRestart();netSend(true);closeM();toast('📡 채널 '+n+'(으)로 옮겼어요')}
+const CALL={pend:null,inc:null,last:0};
+const escH=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function peerAt(cx,cy){const r=cv.getBoundingClientRect();ray.setFromCamera({x:(cx-r.left)/r.width*2-1,y:-((cy-r.top)/r.height*2-1)},cam);
+  const P=Object.values(NET.peers).filter(p=>p.av&&p.av.visible);if(!P.length)return null;const h=ray.intersectObjects(P.map(p=>p.av),true)[0];if(!h)return null;
+  let t=h.object;while(t&&!P.some(p=>p.av===t))t=t.parent;return P.find(p=>p.av===t)||null}
+function askCall(p){if(!p||!p.st)return;const nm=clean(p.st.n,20);
+  if(VC.room&&VC.room.startsWith('dm-')){toast('이미 음성대화 중이에요. 먼저 끊어 주세요');return}
+  openM('<h2>🎧 음성대화</h2><p><b>'+escH(nm)+'</b>님에게 음성대화를 요청할까요?</p><div class="row"><button id="cq1">📞 요청 보내기</button><button class="ghost" onclick="closeM()">취소</button></div>'+(mqOk()||p.src==='bc'?'':'<p class="sub">⚠ 기기 간 연결(중계 서버)이 꺼져 있어 다른 기기 사람과는 음성이 연결되지 않을 수 있어요.</p>'));
+  $('cq1').onclick=()=>{closeM();sendCall(p)}}
+function sendCall(p){const now=Date.now();if(now-CALL.last<6000){toast('⏳ 잠시 후 다시 요청해 주세요');return}CALL.last=now;
+  const nm=clean(p.st.n,20),room='dm-'+[VC.id,String(p.st.id)].sort().join('-');CALL.pend={to:String(p.st.id),room,nm,t:now};
+  vcSend({type:'vreq',to:String(p.st.id),room});toast('📞 '+nm+'님에게 음성대화를 요청했어요. 응답을 기다리는 중…');
+  setTimeout(()=>{if(CALL.pend&&CALL.pend.t===now){CALL.pend=null;vcSend({type:'vcancel',to:String(p.st.id),room});toast('⌛ '+nm+'님이 응답하지 않았어요')}},25000)}
+function ring(){try{tone(880,.18,'sine',.2);setTimeout(()=>tone(660,.25,'sine',.2),220)}catch(e){}if(navigator.vibrate)try{navigator.vibrate([120,80,120])}catch(e){}}
+function onCall(m){const nm=clean(m.nick,20)||'익명';
+  if(m.type==='vreq'){
+    if(CALL.inc||(VC.room&&VC.room.startsWith('dm-'))){vcSend({type:'vres',to:m.from,room:m.room,ok:0,busy:1});return}
+    if(!/^dm-[a-z0-9]+-[a-z0-9]+$/.test(String(m.room||''))||String(m.room).indexOf(VC.id)<0)return;
+    CALL.inc=m;ring();
+    openM('<h2>🎧 음성대화 요청</h2><p><b id="cqn"></b>님이 음성대화를 요청했어요.</p><p style="font-size:18px"><b>음성대화를 하시겠습니까?</b></p><div class="row"><button id="cqa" style="flex:1">✅ 승인</button><button id="cqd" class="ghost" style="flex:1">❌ 거부</button></div><p class="sub">승인하면 마이크 사용 허용을 물어봐요. 두 사람끼리만 연결돼요.</p>');
+    $('cqn').textContent=nm;
+    $('cqa').onclick=async()=>{closeM();CALL.inc=null;const ok=await vcJoin(m.room,2,'📞 '+nm+'님과 음성대화');vcSend({type:'vres',to:m.from,room:m.room,ok:ok?1:0})};
+    $('cqd').onclick=()=>{closeM();CALL.inc=null;vcSend({type:'vres',to:m.from,room:m.room,ok:0});toast('음성대화 요청을 거절했어요')};
+    setTimeout(()=>{if(CALL.inc===m){CALL.inc=null;if($('cqa'))closeM()}},25000)}
+  else if(m.type==='vcancel'){if(CALL.inc&&CALL.inc.from===m.from){CALL.inc=null;if($('cqa'))closeM();toast('📞 '+nm+'님이 요청을 취소했어요')}}
+  else if(m.type==='vres'){const p=CALL.pend;if(!p||p.room!==m.room)return;CALL.pend=null;
+    if(m.ok){toast('✅ '+nm+'님이 승인했어요! 연결하는 중…');vcJoin(m.room,2,'📞 '+nm+'님과 음성대화')}
+    else toast(m.busy?'📵 '+nm+'님은 지금 다른 대화 중이에요':'🙅 '+nm+'님이 음성대화를 거절했어요')}}
 function openPeople(){const P=Object.values(NET.peers);
-  openM('<h2>👥 지금 함께 접속한 사람</h2><p class="sub">익명 닉네임으로만 보여요. 같은 공간에 있으면 서로 아바타가 보이고 채팅할 수 있어요.</p><div id="pl"></div><p class="sub">'+((NET.room&&NET.conn)||NET.dbOk?'🌐 이 링크로 들어온 사람끼리 실시간으로 연결돼 있어요.'+(NET.dbRO?' 지금은 보기 전용 권한이라 다른 사람은 볼 수 있지만 내 아바타와 채팅은 보이지 않아요.':''):(mqOk()?'🌐 같은 모임 코드로 접속한 사람끼리 다른 기기에서도 연결돼 있어요.':'🧪 지금은 같은 브라우저의 다른 탭끼리만 연결돼 있어요. 아래 연결 설정을 확인해 주세요.'))+'</p><p class="sub">🌐 기기 간 연결: '+(mqOk()?'🟢 연결됨 · 모임 코드 '+mqCfg().code:mqCfg().on?'🟡 연결 시도 중':'⚪ 꺼짐')+' <button class="ghost" onclick="openNetCfg()">⚙ 연결 설정</button> <button class="ghost" onclick="openDiag()">🔍 연결 진단</button></p>');
+  openM('<h2>👥 지금 함께 접속한 사람</h2><p class="sub">익명 닉네임으로만 보여요. 같은 공간에 있으면 서로 아바타가 보이고 채팅할 수 있어요.</p><div id="pl"></div><p class="sub">'+((NET.room&&NET.conn)||NET.dbOk?'🌐 이 링크로 들어온 사람끼리 실시간으로 연결돼 있어요.'+(NET.dbRO?' 지금은 보기 전용 권한이라 다른 사람은 볼 수 있지만 내 아바타와 채팅은 보이지 않아요.':''):(mqOk()?'🌐 같은 모임 코드로 접속한 사람끼리 다른 기기에서도 연결돼 있어요.':'🧪 지금은 같은 브라우저의 다른 탭끼리만 연결돼 있어요. 아래 연결 설정을 확인해 주세요.'))+'</p><p class="sub">🌐 기기 간 연결: '+(mqOk()?'🟢 연결됨 · 모임 코드 '+mqCfg().code:mqCfg().on?'🟡 연결 시도 중':'⚪ 꺼짐')+'</p><p class="sub">📡 지금 채널 '+(+S.ch||1)+' · 같은 채널끼리만 만나요: '+[1,2,3,4].map(n=>'<button class="'+(n===(+S.ch||1)?'':'ghost')+'" style="padding:3px 10px" onclick="setCh('+n+')">'+n+'</button>').join(' ')+'</p><p class="sub"><button class="ghost" onclick="openNetCfg()">⚙ 연결 설정</button> <button class="ghost" onclick="openDiag()">🔍 연결 진단</button></p>');
   const pl=$('pl');if(!P.length){pl.textContent='아직 다른 접속자가 없어요.';return}
   P.forEach(p=>{const d=document.createElement('div');d.className='row';d.style.alignItems='center';const s=document.createElement('span');s.style.flex='1';
     s.textContent='🟢 '+clean(p.st.n,20)+(p.guest?' (게스트)':'')+' — '+spaceName(p.m)+(p.m==='fair'?' · '+placeName(wx(p.tx),wz(p.ty)):'');d.appendChild(s);
     const pub=p.m==='fair'||p.m==='park'||p.m==='lounge'||(p.m[0]==='d'&&p.m.length===2);
     const b=document.createElement('button');b.textContent=p.m===map?'📍 옆으로 가기':pub?'🚶 찾아가기':'🔒 동아리 코드 필요';b.disabled=!(p.m===map||pub);
+    if(p.m===map){const vb=document.createElement('button');vb.className='ghost';vb.textContent='🎧 음성';vb.onclick=()=>askCall(p);d.appendChild(vb)}
     b.onclick=()=>{closeM();if(p.m!==map)go(p.m);const ok=p.m!=='fair'||walk(p.tx+40,p.ty+40);me.x=me.tx=ok?p.tx+40:p.tx;me.y=me.ty=ok?p.ty+40:p.ty;toast('👋 '+clean(p.st.n,20)+' 님 옆에 왔어요')};d.appendChild(b);pl.appendChild(d)})}
 
 
@@ -1188,14 +1234,16 @@ let yaw=0,pitch=.65,dist=10,dn=null,drag=false,JX=0,JY=0,RUN=0;
   $('hint').addEventListener('click',()=>{const o=objs().find(near);if(o&&o.kind!=='door')act(o)})})();
 function openMMenu(){const bs=[...document.querySelectorAll('header button.ghost')];openM('<h2>☰ 메뉴</h2><p class="sub">'+$('me').textContent+' · '+$('pt').textContent+' · '+$('st').textContent+'</p>'+bs.map((b,i)=>{const t=b.textContent.trim(),L={'👋':'👋 인사하기','💃':'💃 춤추기','⚡':'⚡ 가벼운 모드 (느릴 때 켜기)','🎧':'🎧 배경 소리'};return '<button class="opt" data-mi="'+i+'">'+(L[t]||b.innerHTML)+'</button>'}).join('')+'<p class="sub">조작: 왼쪽 아래 조이스틱으로 이동 · 🏃 달리기 · 화면을 끌면 회전 · 두 손가락으로 확대/축소 · 건물·부스를 탭하면 열기</p>');
   document.querySelectorAll('[data-mi]').forEach(x=>x.onclick=()=>{closeM();bs[+x.dataset.mi].click()})}
-cv.addEventListener('pointercancel',e=>{PT.delete(e.pointerId);dn=null;drag=false});cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('pointercancel',e=>{PT.delete(e.pointerId);dn=null;drag=false});cv.addEventListener('contextmenu',e=>{e.preventDefault();const p=peerAt(e.clientX,e.clientY);if(p)askCall(p)});
 cv.addEventListener('wheel',e=>{e.preventDefault();dist=Math.max(3,Math.min(34,dist+e.deltaY*.012))},{passive:false});const ray=new THREE.Raycaster(),pl=new THREE.Plane(new THREE.Vector3(0,1,0),0);
 const PT=new Map();let PZ=0;const pdist=()=>{const v=[...PT.values()];return Math.hypot(v[0][0]-v[1][0],v[0][1]-v[1][1])||1};
-cv.addEventListener('pointerdown',e=>{window.focus();PT.set(e.pointerId,[e.clientX,e.clientY]);if(PT.size>=2){dn=null;PZ=pdist();return}dn={x:e.clientX,y:e.clientY};drag=false;cv.setPointerCapture(e.pointerId)});
+let LPT=0,LPF=0;
+cv.addEventListener('pointerdown',e=>{window.focus();PT.set(e.pointerId,[e.clientX,e.clientY]);clearTimeout(LPT);LPF=0;if(PT.size>=2){dn=null;PZ=pdist();return}dn={x:e.clientX,y:e.clientY};drag=false;cv.setPointerCapture(e.pointerId);
+  const cx=e.clientX,cy=e.clientY;LPT=setTimeout(()=>{if(!dn||drag)return;const p=peerAt(cx,cy);if(p){LPF=1;dn=null;askCall(p)}},550)});
 cv.addEventListener('pointermove',e=>{if(PT.has(e.pointerId))PT.set(e.pointerId,[e.clientX,e.clientY]);if(PT.size>=2){const d=pdist();if(PZ)dist=Math.max(3,Math.min(34,dist*PZ/d));PZ=d;return}if(!dn)return;const dx=e.clientX-dn.x;
   if(drag||Math.abs(dx)>10||Math.abs(e.clientY-dn.y)>10){drag=true;yaw-=dx*.006;pitch=Math.max(-.5,Math.min(1.5,pitch+(e.clientY-dn.y)*.005));dn.x=e.clientX;dn.y=e.clientY}});
 cv.addEventListener('pointerup',e=>{
-  PT.delete(e.pointerId);if(PT.size)return;
+  clearTimeout(LPT);PT.delete(e.pointerId);if(PT.size)return;if(LPF){LPF=0;dn=null;return}
   if(!dn)return;const was=drag;dn=null;if(was)return;
   const r=cv.getBoundingClientRect();
   ray.setFromCamera({x:(e.clientX-r.left)/r.width*2-1,y:-((e.clientY-r.top)/r.height*2-1)},cam);
@@ -1627,7 +1675,7 @@ function openStamp(){
   const AB=allBooths();
   openM('<h2>🏅 스탬프 투어</h2><p>'+Object.keys(S.stamps).length+'/'+AB.length+' · ⭐ '+S.points+'P</p>'+DIV.map((d,k)=>'<p><b>'+d.e+' '+d.n+'</b><br>'+AB.filter(b=>b.dv===k).map(b=>'<span class="chip">'+b.emoji+' '+b.name+(S.stamps[b.id]?' ✅':'')+'</span>').join(' ')+'</p>').join('')+
   '<h3>📍 오프라인 현장 인증</h3><p class="sub">현장 부스에서 받은 코드(예: OFF-C19)를 입력하면 +30P!</p><div class="row"><input id="oc" placeholder="오프라인 부스 코드"><button onclick="offCode()">인증</button></div><h3>뱃지</h3><ul>'+BADGES.map(b=>'<li>'+(S.badges[b.id]?'✅':'🔒')+' '+b.n+' <span class="sub">'+b.d+'</span></li>').join('')+'</ul>'+
-  '<button class="ghost" onclick="S.color=COLORS[Math.random()*COLORS.length|0];save();hud();toast(\'아바타 색 변경!\')">🎭 아바타 색 바꾸기</button> <button class="ghost" onclick="S.vid=null;save();location.reload()">🔒 로그아웃</button><p class="sub">닉네임은 재학생 인증 때 자동으로 정해지고 바꿀 수 없어요.</p>');
+  '<button class="ghost" onclick="S.color=COLORS[Math.random()*COLORS.length|0];save();hud();toast(\'아바타 색 변경!\')">🎭 아바타 색 바꾸기</button> <button class="ghost" onclick="openNick()">✏ 닉네임 바꾸기</button> <button class="ghost" onclick="S.vid=null;save();location.reload()">🔒 로그아웃</button><p class="sub"></p>');
 }
 let ADM=0;const ADMIN_PIN='HSU-ADMIN-2026';
 function openAdmin(){if(ADM){openAdminMenu();return}
@@ -1691,7 +1739,7 @@ async function gateVerify(){
   if($('gc').value.trim()!==gcode){$('gm').textContent='❌ 코드가 달라요 ('+gtry+'/5)';return}
   const h=await sha(gmail),b=h.match(/../g).map(x=>parseInt(x,16));
   S.vid=h;S.vexp=Date.now()+12*3600*1000;S.nick=ADJ[b[0]%8]+' '+ANI2[b[1]%8]+' '+(10+b[2]%90);save();hud();gcode='';
-  S.tester=0;save();toast('✅ 인증 완료! 익명 닉네임: '+S.nick);gateChannel()}
+  S.tester=0;save();toast('✅ 인증 완료!');gateNick()}
 /* ===== 테스트 입장·채널(서버 부담 분산)·대기열 ===== */
 const TEST_CODES=['HSU-TEST-2026'];
 let tfail=0,tlock=0;
@@ -1700,14 +1748,27 @@ function gateTest(){
   const v=$('gt').value.trim().toUpperCase();
   if(!TEST_CODES.includes(v)){if(++tfail>=3){tlock=Date.now()+10000;tfail=0}$('gm').textContent='❌ 테스트 암호가 달라요.';return}
   const b=[0,0,0].map(()=>Math.random()*100|0);
-  S.vid='test-'+Date.now();S.vexp=Date.now()+6*3600*1000;S.tester=1;S.nick=ADJ[b[0]%8]+' '+ANI2[b[1]%8]+' '+(10+b[2]%90);save();hud();gateChannel()}
+  S.vid='test-'+Date.now();S.vexp=Date.now()+6*3600*1000;S.tester=1;S.nick=ADJ[b[0]%8]+' '+ANI2[b[1]%8]+' '+(10+b[2]%90);save();hud();gateNick()}
 const CHS=[{n:1,cap:30,base:30},{n:2,cap:30,base:22},{n:3,cap:30,base:12},{n:4,cap:30,base:4}];
+const NICK_BAN=['운영진','관리자','운영자','admin','관리','staff','회장','부회장'];
+function nickErr(v){if(v.length<2)return '닉네임은 2자 이상이어야 해요.';if(v.length>12)return '닉네임은 12자까지예요.';if(/[<>&"'`]/.test(v))return '특수문자 < > & " \' 는 쓸 수 없어요.';
+  const k=v.toLowerCase().replace(/\s+/g,'');if(NICK_BAN.some(w=>k.includes(w)))return '운영진·임원진을 사칭할 수 있는 닉네임은 쓸 수 없어요.';
+  const kb=k.replace(/[.\-_*!?~,]/g,'');if(BAD.some(w=>kb.includes(w)))return '부적절한 표현이 들어 있어요.';return ''}
+const rndNick=()=>{const b=[0,0,0].map(()=>Math.random()*100|0);return ADJ[b[0]%8]+' '+ANI2[b[1]%8]+' '+(10+b[2]%90)};
+function gateNick(){$('gate').style.display='flex';
+  $('gate').innerHTML='<div class="gc"><h2>😀 닉네임 정하기</h2><p>메타버스에서 다른 사람들에게 보일 이름이에요. <b>실명 대신 별명</b>을 추천해요. (2~12자)</p><div class="row"><input id="gn" maxlength="12" autocomplete="off" placeholder="예: 농구하는 토끼"><button id="gnb">이 닉네임으로 입장</button></div><button class="ghost" id="gnr" style="margin-top:8px">🎲 랜덤 닉네임 추천</button><p class="sub" id="gm" style="color:#e5484d;font-weight:700"></p><p class="sub">닉네임은 입장 후에도 🏅 스탬프·뱃지 메뉴에서 바꿀 수 있어요.</p></div>';
+  const gn=$('gn');gn.value=S.nick||rndNick();gn.select();
+  const ok=()=>{const v=clean(gn.value,12).replace(/\s+/g,' ').trim(),e=nickErr(v);if(e){$('gm').textContent='❌ '+e;return}S.nick=v;save();hud();gateChannel()};
+  $('gnb').onclick=ok;gn.onkeydown=e=>{if(e.key==='Enter')ok()};$('gnr').onclick=()=>{gn.value=rndNick();gn.focus()}}
+function openNick(){openM('<h2>✏ 닉네임 바꾸기</h2><div class="row"><input id="nn" maxlength="12" autocomplete="off"><button id="nnb">바꾸기</button></div><p class="sub" id="nm" style="color:#e5484d"></p>');
+  $('nn').value=S.nick;$('nn').select();const ok=()=>{const v=clean($('nn').value,12).replace(/\s+/g,' ').trim(),e=nickErr(v);if(e){$('nm').textContent='❌ '+e;return}S.nick=v;save();hud();netSend(true);closeM();toast('✏ 닉네임이 「'+v+'」(으)로 바뀌었어요')};
+  $('nnb').onclick=ok;$('nn').onkeydown=e=>{if(e.key==='Enter')ok()}}
 function gateChannel(){
   $('gate').style.display='flex';
   const rows=CHS.map(c=>{const o=Math.min(c.cap,Math.max(0,c.base+(Math.random()*5-2|0))),full=o>=c.cap;
     return '<div class="chip" style="display:flex;justify-content:space-between;align-items:center;border-radius:10px;margin:6px 0;padding:8px 12px"><span>📡 채널 '+c.n+' · '+o+'/'+c.cap+(full?' 🔴 혼잡':o>20?' 🟡':' 🟢')+'</span><button onclick="'+(full?'gateQueue('+c.n+')':'pickCh('+c.n+')')+'">'+(full?'대기열 등록':'입장')+'</button></div>'}).join('');
-  $('gate').innerHTML='<div class="gc"><h2>📡 채널 선택</h2><p class="sub">한꺼번에 몰리지 않도록 채널을 나눠 운영해요 (채널당 최대 30명). 한가한 채널을 추천해요! (데모: 인원은 가상 수치)</p>'+rows+'<button class="ghost" onclick="pickCh(0)">✨ 가장 한가한 채널로 자동 입장</button></div>'}
-function pickCh(n){if(!n)n=CHS.reduce((a,c)=>c.base<a.base?c:a).n;S.ch=n;save();hud();startWorld()}
+  $('gate').innerHTML='<div class="gc"><h2>📡 채널 선택</h2><p class="sub">한꺼번에 몰리지 않도록 채널을 나눠 운영해요 (채널당 최대 30명). <b>같은 채널에 들어온 사람끼리만</b> 서로 보이고 대화할 수 있어요. 친구와 만나려면 같은 채널을 고르세요! (데모: 인원 숫자는 가상 수치)</p>'+rows+'<button class="ghost" onclick="pickCh(0)">✨ 기본 채널(채널 1)로 입장</button></div>'}
+function pickCh(n){if(!n)n=1;S.ch=n;save();hud();startWorld()}
 function gateQueue(n){
   let pos=8+(Math.random()*6|0);const t0=pos;
   $('gate').innerHTML='<div class="gc"><h2>⏳ 입장 대기 중</h2><p>채널 '+n+' 대기열 <b id="qp">'+pos+'</b>번째 · 예상 <b id="qt">'+Math.ceil(pos/4)+'</b>분</p><div style="height:8px;background:var(--bd);border-radius:4px"><div id="qb" style="height:8px;background:var(--pri);width:0;border-radius:4px"></div></div><p class="sub">데모라서 빠르게 줄어들어요. 기다리기 싫으면 다른 채널로 이동하세요.</p><button class="ghost" onclick="gateChannel()">← 다른 채널 보기</button></div>';
