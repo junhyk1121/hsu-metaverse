@@ -258,7 +258,7 @@ const HH=(x,z)=>map==='fair'?H(x,z):0;let gyS=0;
 const walk=(px,py)=>{const q=XZ(px,py),x=q[0],z=q[1];return WALK.some(r=>x>=r[0]&&x<=r[1]&&z>=r[2]&&z<=r[3])};
 const PI=Math.PI,GATE=[-2,0];
 const BLD=[
- ['미래관',18,-30,48,18,20,-PI/2,'modern'],['창의관',-24,-16,16,26,12,PI/2,'ctower'],['인성관',-24,-42,16,18,11,PI/2,'plain2',0xe4dccb],
+ ['미래관',18,-30,48,18,20,-PI/2,'modern'],['창의관',-39.5,-82.5,16,26,12,0,'ctower'],['인성관',-26,-82.5,16,18,11,PI/2,'plain2',0xe4dccb],
  ['낙산관(체육관)',-50,10,22,10,16,PI/2,'gym'],['연구관',4,-108,34,30,10,PI/2,'yeongu'],['지선관',-28,-108,10,14,9,0,'plain',0xd9d3c4],
  ['공학관 A',-46,-111,14,14,10,0,'plain',0xb9b6b0],['공학관 B',-64,-112,12,12,9,0,'plain',0xb9b6b0],['상상빌리지',-72,-80,9,8,8,PI,'glassblue'],
  ['상상관',36,-72,24,40,14,0,'sang'],['우촌관·중문',70,-34,56,14,14,-PI/2,'dark'],['안내실',16,5,6,4,5,0,'plain',0xe9e6dc],
@@ -778,6 +778,12 @@ function campus(){
     if(n==='상상관')ent(x+3,z+16,0,5,'상상관',0x5a6270);else if(n!=='연구관'){const lo=n==='미래관'?-15:0,ew=Math.min(3.6,w*.28);ent(x+Math.sin(ry)*(d/2)+Math.cos(ry)*lo,z+Math.cos(ry)*(d/2)-Math.sin(ry)*lo,ry,ew,n.replace(/\(.*\)/,''))}
     const hy=['지선관','공학관 A','공학관 B','상상빌리지'].includes(n)?hillH(x,z):(['우촌관·중문','상상관','진리관','학송관'].includes(n)?-4:0);
     if(hy){lift(q0,hy);if(hy>0){const e=fp(b);BX(x,hy/2-.3,z,e[0]+1.4,hy+.6,e[1]+1.4,0x8d8272)}}});
+  /* 인성관 ↔ 연구관 공중 연결 다리 (도로·계단 위를 지나감) */
+  {const ax=-20.5,az=-88.5,bx=-1,bz=-93,dx=bx-ax,dz=bz-az,L=Math.hypot(dx,dz),g=new THREE.Group();g.position.set((ax+bx)/2,0,(az+bz)/2);g.rotation.y=Math.atan2(-dz,dx);world.add(g);
+   box(g,L,.4,3.2,0xd8d3c7,0,8.6,0);box(g,L+.4,.3,3.6,0x8d9aa0,0,11.6,0);
+   [-1,1].forEach(s=>{const gl=new THREE.Mesh(new THREE.BoxGeometry(L,2.6,.12),new THREE.MeshLambertMaterial({color:0x9fc7e0,transparent:true,opacity:.75}));gl.position.set(0,10.1,s*1.55);g.add(gl)});
+   for(let i=0;i<=5;i++)[-1,1].forEach(s=>box(g,.22,2.9,.22,0xeceff4,-L/2+i*L/5,10.1,s*1.6));
+   tl('🌉 인성관 ↔ 연구관 연결 다리',(ax+bx)/2,13.4,(az+bz)/2,1)}
   {const hy=hillH(-28,-108);BX(-28,hy+.25,-102.2,8,.5,3,0x1b1b1f);BX(-22.6,hy+1.2,-102.6,1.1,2.2,.9,0x2f9f5a);BX(-31.4,hy+1.4,-102.6,3.4,2.4,.1,0xf2f2f2)}
   {const q=world.children.length;[-79,-73,-67,-61,-55].forEach(z=>{const c=new THREE.Mesh(new THREE.CylinderGeometry(.5,.5,7,10),mat(0xe9ecee));c.position.set(49.2,3.5,z);world.add(c)});BX(50.5,7.2,-67,5.5,.4,26,0x8d9aa0);lift(q,-4)}
   {const q=world.children.length;pagoda(76,-100);lift(q,-4)}
