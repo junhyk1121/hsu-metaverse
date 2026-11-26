@@ -742,6 +742,53 @@ function sangsang(cx,cz,W){W=W||24;
   const mu=new THREE.Mesh(new THREE.PlaneGeometry(Math.min(18,W*.5),3.4),new THREE.MeshBasicMaterial({map:cvs(768,144,c=>{c.fillStyle='#f4f6fb';c.fillRect(0,0,768,144);c.strokeStyle='#2b3a8c';c.lineWidth=8;c.strokeRect(14,14,740,116);c.fillStyle='#2b3a8c';c.font='bold 54px sans-serif';c.textAlign='left';c.textBaseline='middle';c.fillText('HSU  글로벌원스톱센터',48,62);c.font='28px sans-serif';c.fillText('GLOBAL ONE-STOP CENTER',52,108)})}));
   mu.position.set(cx+W/4,6.4,cz-7.05);mu.rotation.y=Math.PI;world.add(mu);
   const l=lab('상상관',2.2);l.position.set(cx,44,cz+8);world.add(l)}
+/* 미래관 (사진 3장): 정면(정문 쪽, 남쪽)=회색 석재 + 왼쪽 위 로고 + 오른쪽 위 큰 사각 개구부(테라스·흰 기둥),
+   왼쪽 옆면(도로 쪽, 서쪽)=흰 프레임 유리 아트리움 + 옥상 퍼걸러, 오른쪽 옆면(미래마당 쪽, 동쪽)=크림색 창 격자 + 계단식 테라스 + 노란 테 창 + 1층 유리·기둥열 */
+function mirae(){
+  const HT=21.6,FH=3.6,WH=0xf2f2ef,CR=0xe7ddc7,
+   rpt=(t,rw,rh,cw,ch)=>{t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(Math.max(1,Math.round(rw/cw)),Math.max(1,Math.round(rh/ch)));return new THREE.MeshLambertMaterial({map:t})},
+   stone=(rw,rh)=>rpt(cvs(128,128,c=>{c.fillStyle='#b4b2ac';c.fillRect(0,0,128,128);c.fillStyle='rgba(255,255,255,.07)';c.fillRect(0,0,64,64);c.fillRect(64,64,64,64);c.strokeStyle='rgba(80,80,80,.35)';c.lineWidth=2;c.strokeRect(1,1,126,126);c.beginPath();c.moveTo(0,64);c.lineTo(128,64);c.moveTo(64,0);c.lineTo(64,128);c.stroke()}),rw,rh,2.4,2.4),
+   cream=(rw,rh)=>rpt(cvs(128,128,c=>{c.fillStyle='#e7ddc7';c.fillRect(0,0,128,128);c.fillStyle='#55656f';c.fillRect(18,28,92,62);c.fillStyle='rgba(255,236,190,.55)';c.fillRect(18,28,92,24);c.fillStyle='#d9ceb4';c.fillRect(62,28,4,62);c.strokeStyle='#cfc4ab';c.lineWidth=3;c.strokeRect(1,1,126,126)}),rw,rh,3,FH),
+   SB=(x0,x1,y0,y1,z0,z1,east)=>{const w=x1-x0,h=y1-y0,d=z1-z0,tp=mat(0x9a9892),me=east?cream(d,h):stone(d,h),mw=stone(d,h),mz=stone(w,h);
+     const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),[me,mw,tp,tp,mz,mz]);m.position.set((x0+x1)/2,(y0+y1)/2,(z0+z1)/2);world.add(m);return m},
+   GB=(x,y,z,w,h,d,c,o)=>{const m=BX(x,y,z,w,h,d,c);m.material=new THREE.MeshLambertMaterial({color:c,transparent:true,opacity:o});return m},
+   LT=(x,y,z,w,h,d,c)=>{const m=BX(x,y,z,w,h,d,c);m.material=new THREE.MeshBasicMaterial({color:c});return m};
+  /* 몸체: 정면 블록(오른쪽 위 개구부) + 뒤 블록(1층 통로 위로 이어짐) */
+  SB(9.6,27,0,HT,-20,-10,1);SB(9.6,27,0,13.2,-10,-6,1);SB(9.6,19,13.2,HT,-10,-6,0);SB(19,27,20.2,HT,-7.4,-6,0);SB(25.6,27,13.2,20.2,-10,-6,1);
+  SB(12,27,0,HT,-54,-36,1);SB(12,27,9,HT,-36,-24,1);SB(12,27,0,HT,-24,-20,1);
+  BX(19.5,HT+.15,-30,15.4,.3,48.2,0x8f8d87);BX(18.3,HT+.35,-5.95,17.6,.7,.3,0xc9c7c1);
+  /* 정면: 로고 · 세로 슬릿 창 · 작은 창 · 유리 입구 */
+  {const lg=new THREE.Mesh(new THREE.PlaneGeometry(7.2,1.8),new THREE.MeshBasicMaterial({map:cvs(512,128,c=>{c.fillStyle='#b4b2ac';c.fillRect(0,0,512,128);c.fillStyle='#1f5fbf';c.beginPath();c.moveTo(14,14);c.lineTo(64,14);c.arc(64,64,50,-Math.PI/2,Math.PI/2);c.lineTo(14,114);c.closePath();c.fill();
+     c.fillStyle='#fff';c.font='bold 60px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('H',58,66);c.fillStyle='#1d4f9c';c.textAlign='left';c.font='bold 50px sans-serif';c.fillText('HANSUNG',134,46);c.font='bold 31px sans-serif';c.fillText('UNIVERSITY',136,98)})}));
+   lg.position.set(14.2,19.3,-5.93);world.add(lg)}
+  for(let f=0;f<5;f++)[10.9,11.8,16.4,17.3].forEach((x,i)=>{if(f===4&&i<2)return;BX(x,1+f*FH+(i%2?.4:0)+1.4,-5.92,.32,2.3,.06,0x3d4852)});
+  for(let f=1;f<3;f++)[20.6,22.6,24.6].forEach(x=>BX(x,f*FH+1.6,-5.92,1.1,1.3,.06,0x3d4852));
+  GB(14.6,1.9,-5.9,5.6,3.8,.12,0x6f93a3,.75);[11.8,17.4].forEach(x=>BX(x,1.9,-5.85,.18,3.8,.16,WH));
+  /* 정면 오른쪽 위 큰 사각 개구부: 안쪽 크림 벽 · 흰 기둥 · 퍼걸러 · 화단 테라스 */
+  BX(22.3,16.7,-9.94,6.6,7,.08,CR);BX(22.4,16.7,-8,.7,7,.7,WH);[-8.9,-7.2].forEach(z=>BX(22.3,19.7,z,6.6,.22,.22,WH));
+  [[20.6,-8.6],[24.3,-8.6]].forEach(p=>{BX(p[0],13.6,p[1],2.6,.8,1.6,0x8a8780);BX(p[0],14.05,p[1],2.4,.2,1.4,0x5d9a4b);BX(p[0],14.7,p[1],.9,1.2,.9,0x4f8f43)});
+  GB(22.3,13.75,-6.25,6.6,1.1,.05,0xcfe8f0,.5);
+  /* 왼쪽 옆면(도로 쪽): 흰 프레임 유리 아트리움 + 안쪽 바닥판 · 계단 · 조명 */
+  GB(10.5,HT/2,-44,3,HT,16,0x8fb8c8,.45);GB(10.5,(9+HT)/2,-30,3,HT-9,12,0x8fb8c8,.45);GB(10.5,HT/2,-22,3,HT,4,0x8fb8c8,.45);
+  for(let i=1;i<6;i++){const y=i*FH;if(y>9)BX(10.5,y,-36,3,.22,32,0xe4e6e8);else{BX(10.5,y,-44,3,.22,16,0xe4e6e8);BX(10.5,y,-22,3,.22,4,0xe4e6e8)}}
+  for(let z=-52;z<=-20;z+=2){const pas=z>-36&&z<-24,y0=pas?9:0;BX(8.98,(y0+HT)/2,z,.18,HT-y0,.18,WH)}
+  for(let i=1;i<=6;i++){const y=i*FH;if(y>9)BX(8.98,y,-36,.2,.2,32,WH);else{BX(8.98,y,-44,.2,.2,16,WH);BX(8.98,y,-22,.2,.2,4,WH)}}
+  BX(10.5,HT,-36,3.2,.25,32.2,WH);
+  for(let i=0;i<5;i++){const st=BX(11,i*FH+FH/2,-47,.14,.14,4.4,WH);st.rotation.x=(i%2?-1:1)*.68}
+  for(let f=0;f<5;f++)[-48,-42,-22].forEach(z=>{if(f<3&&z===-22)return;LT(11.9,f*FH+2.2,z,.05,1.6,3.4,0xffe0a0)});
+  /* 옥상 흰 퍼걸러 (아트리움 위·동쪽 끝) */
+  [-52,-44,-36,-28,-20].forEach(z=>[9,12].forEach(x=>BX(x,HT+1,z,.3,2,.3,WH)));
+  [9,12].forEach(x=>BX(x,HT+2,-36,.3,.3,32.3,WH));for(let z=-52;z<=-20;z+=2)BX(10.5,HT+2,z,3.3,.22,.22,WH);
+  for(let z=-54;z<=-6;z+=6)BX(27.15,HT+.9,z,.35,1.8,.35,WH);BX(27.15,HT+1.8,-30,.35,.3,48.3,WH);
+  /* 오른쪽 옆면(미래마당 쪽): 계단식 테라스 · 노란 테 창 · 1층 유리와 기둥열 */
+  for(let k=1;k<=5;k++){const len=14-k*1.8,zc=-6-len/2;BX(27.7,k*FH,zc,1.4,.28,len,WH);GB(28.38,k*FH+.6,zc,.05,1.1,len,0xcfe8f0,.55);BX(27.7,k*FH+.6,-6.05,1.4,1.1,.08,WH)}
+  BX(27.06,12.1,-45,.14,2.9,10.6,0xd8a92a);LT(27.12,12.1,-45,.08,2.3,10,0x9fd3e6);
+  [[-45,18],[-22,4],[-13,14]].forEach(a=>{GB(27.05,2.1,a[0],.08,4.2,a[1],0x5f7f8c,.85);BX(27.9,4.75,a[0],1.9,.35,a[1],WH)});
+  for(let z=-52;z<=-8;z+=4){if(z>-37&&z<-23)continue;const c=new THREE.Mesh(new THREE.CylinderGeometry(.32,.32,4.6,10),mat(0x5a626b));c.position.set(28.2,2.3,z);world.add(c)}
+  /* 서쪽 정면 블록 쪽 슬릿 창 */
+  for(let f=0;f<5;f++)[-17,-15.6].forEach(z=>BX(9.57,f*FH+2.4,z,.06,2.3,.32,0x3d4852));
+  ent(14.6,-6,0,3.6,'미래관');ent(9,-46,-PI/2,3.4,'미래관 아트리움');
+  const l=lab('미래관',2);l.position.set(18,HT+4.4,-30);world.add(l)}
 function campus(){
   const TC=[0xd35400,0xc0392b,0x2e8b57,0xe0a030],tl=(t,x,y,z,sz)=>{const l=lab(t,sz);l.position.set(x,y,z);world.add(l)},lift=(n,dy)=>{for(let i=n;i<world.children.length;i++)world.children[i].position.y+=dy};
   /* 언덕(연구관 뒤 · 지선관/공학관/상상빌리지): 높이맵 지형 */
@@ -834,7 +881,7 @@ function campus(){
   
   /* 건물 */
   BLD.forEach(b=>{const n=b[0],x=b[1],z=b[2],w=b[3],h=b[4],d=b[5],ry=b[6],k=b[7],c=b[8],q0=world.children.length;
-    if(n==='미래관'){modern(18,-45,18,18,20,'미래관',-PI/2);modern(18,-15,18,18,20,' ',-PI/2);BX(18,13.9,-30,20,9.6,12.2,0x2f4a6e);BX(18,9.1,-30,20.4,.3,12.4,0xeceff4);
+    if(n==='미래관'){mirae();BX(18,9.05,-30,18.4,.2,12.2,0xeceff4);
       [-6.4,6.4].forEach(dz=>[9,27].forEach(px=>BX(px,4.6,-30+dz,.5,9.2,.5,0xeceff4)));
       const rp2=BX(18.5,-2.15,-30,21.4,.3,10.6,0xcfc7b8);rp2.rotation.z=-Math.atan(4/21);[11,18,25].forEach(px=>BX(px,8.8,-30,.6,.12,6,0xfff2b0));
       tl('미래관 1층 통로 ↘ 미래마당(내리막)',8.5,7.4,-30,1.1)}
@@ -842,7 +889,7 @@ function campus(){
     else if(k==='plain')bldg(x,z,w,h,d,c,n,ry);else if(k==='plain2')bldg(x,z,w,h,d,c,n,ry,2);else if(k==='glassblue')bldg(x,z,w,h,d,0x6fa8dc,n,ry,true);
     else if(k==='hip')hip(x,z,w,h,d,n,ry);else if(k==='flag')lowflag(x,z,n,ry);else if(k==='ctower')ctower(x,z,w,h,d,n,ry);else if(k==='gym')gym(x,z,w,h,d,n,ry);else if(k==='yeongu')yeongu();else if(k==='sang')sangsang(x,z,w);
     else if(k==='dark'){const g=bldg(x,z,w,h,d,0x23262e,n,ry);for(let i=0;i<24;i++)box(g,.12,2.4,.05,0xffc977,-w/2+2+i*(w-4)/23,3.2+(i%3)*.5,d/2+.05);box(g,3,h+3,3,0x8a5f4e,w/2-5,(h+3)/2,d/2+.8)}
-    if(n==='상상관'){}else if(n!=='연구관'){const lo=n==='미래관'?-15:0,ew=Math.min(3.6,w*.28);ent(x+Math.sin(ry)*(d/2)+Math.cos(ry)*lo,z+Math.cos(ry)*(d/2)-Math.sin(ry)*lo,ry,ew,n.replace(/\(.*\)/,''))}
+    if(n==='상상관'||n==='미래관'){}else if(n!=='연구관'){const lo=n==='미래관'?-15:0,ew=Math.min(3.6,w*.28);ent(x+Math.sin(ry)*(d/2)+Math.cos(ry)*lo,z+Math.cos(ry)*(d/2)-Math.sin(ry)*lo,ry,ew,n.replace(/\(.*\)/,''))}
     const hy=['지선관','공학관 A','공학관 B','상상빌리지'].includes(n)?hillH(x,z):(['우촌관·중문','상상관','진리관','학송관'].includes(n)?-4:0);
     if(n==='상상관')ent(x+3,z+7.15,0,5,'상상관',0x5a6270).position.y+=4; /* 아래 lift(-4) 후 높은 마당 높이(0) */
     if(hy){lift(q0,hy);if(hy>0){const e=fp(b);BX(x,hy/2-.3,z,e[0]+1.4,hy+.6,e[1]+1.4,0x8d8272)}}});
